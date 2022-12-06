@@ -5,46 +5,23 @@ export class TestView {
 	constructor(context: vscode.ExtensionContext) {
 		const view = vscode.window.createTreeView('testView', { treeDataProvider: aNodeWithIdTreeDataProvider(), showCollapseAll: true });
 		context.subscriptions.push(view);
-		vscode.commands.registerCommand('testView.reveal', async () => {
-			const key = await vscode.window.showInputBox({ placeHolder: 'Type the label of the item to reveal' });
-			if (key) {
-				await view.reveal({ key }, { focus: true, select: false, expand: true });
-			}
-		});
-		vscode.commands.registerCommand('testView.changeTitle', async () => {
-			const title = await vscode.window.showInputBox({ prompt: 'Type the new title for the Test View', placeHolder: view.title });
-			if (title) {
-				view.title = title;
-			}
-		});
 	}
 }
 
 const tree: any = {
 	'a': {
-		'aa': {
-			'aaa': {
-				'aaaa': {
-					'aaaaa': {
-						'aaaaaa': {
-
-						}
-					}
-				}
-			}
-		},
-		'ab': {}
-	},
-	'b': {
-		'ba': {},
-		'bb': {}
+		'aa': {}
 	}
 };
 const nodes: any = {};
 
 function aNodeWithIdTreeDataProvider(): vscode.TreeDataProvider<{ key: string }> {
 	return {
-		getChildren: (element: { key: string }): { key: string }[] => {
+		getChildren: async (element: { key: string }): Promise<{ key: string }[]> => {
+			// When not the root, we wait for 5 seconds to repro https://github.com/microsoft/vscode/issues/62214
+			if (element) {
+				await new Promise<void>(resolve => setTimeout(() => resolve(), 5000));
+			}
 			return getChildren(element ? element.key : undefined).map(key => getNode(key));
 		},
 		getTreeItem: (element: { key: string }): vscode.TreeItem => {
@@ -77,7 +54,7 @@ function getTreeItem(key: string): vscode.TreeItem {
 	return {
 		label: /**vscode.TreeItemLabel**/<any>{ label: key, highlights: key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0 },
 		tooltip,
-		collapsibleState: treeElement && Object.keys(treeElement).length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
+		collapsibleState: treeElement && Object.keys(treeElement).length ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None
 	};
 }
 
